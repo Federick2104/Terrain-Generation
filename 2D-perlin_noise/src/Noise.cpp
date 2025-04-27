@@ -121,6 +121,8 @@ cmake .. && make NoiseTest
 
 #if defined(TEST_NOISE_STANDALONE)
 
+
+
 void testNoise() {
     std::cout << "\n=== TEST PERLIN NOISE ===\n";
 
