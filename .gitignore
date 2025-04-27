@@ -1,0 +1,55 @@
+# File generati da CMake e build system
+build/
+out/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.ninja
+.ninja_deps
+.ninja_log
+*.user
+*.suo
+*.sln
+*.vcxproj*
+*.xcodeproj
+*.project
+
+# File generati dall'editor/IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# File di sistema
+.DS_Store
+Thumbs.db
+
+# File di output e binari
+bin/
+*.exe
+*.app
+*.so
+*.dylib
+*.dll
+*.a
+*.lib
+
+# Log e file temporanei
+*.log
+*.tmp
+*.swp
+*~
+*.bak
+
+# File generati da SFML (se presenti)
+*.sfbk
+*.sfml
+
+# File di configurazione locale
+local_settings.*
+.env
+
+# File di dati generati (se presenti)
+*.map
+*.terrain
+*.noise
