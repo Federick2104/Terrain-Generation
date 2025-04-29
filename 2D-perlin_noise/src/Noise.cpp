@@ -6,12 +6,13 @@
 #include <algorithm>  // Per std::shuffle
 #include <numeric>    // Per std::iota
 #include <random>     // Per std::default_random_engine
-#include <cmath>     // Per std::floor
+#include <cmath>     // Per std::floor std::sqrt
 
 PerlinNoise::PerlinNoise(unsigned int seed) {
     // 1. Inizializzo la tabella_permutazione con numeri da 0 a 255
     tabella_permutazione.resize(256);
     std::iota(tabella_permutazione.begin(), tabella_permutazione.end(), 0);
+
 
     // 2. Mescolo la tabella_permutazione usando il seed
     std::default_random_engine engine(seed);
@@ -34,19 +35,41 @@ PerlinNoise::PerlinNoise(unsigned int seed) {
        (1,0) è la direzione orizzontale a destra ... eccetera */
        // (1 1) è la direzione diagonale in alto a destra  
 
-    gradienti = {
-        //destra         sinistra      in alto       in basso
-        {1.0f, 0.0f} , {-1.0f, 0.0f}, {0.0f, 1.0f} , {0.0f, -1.0f}, 
-        //diagonali  
-        {1.0f, 1.0f} , {1.0f, -1.0f}, {-1.0f, 1.0f}, {-1.0f, -1.0f}
+       gradienti = {
+        // Diagonali (norma sqrt(2) ≈ 1.414)
+        {1.0f, 1.0f},    // Destra-alto
+        {1.0f, -1.0f},   // Destra-basso
+        {-1.0f, 1.0f},   // Sinistra-alto
+        {-1.0f, -1.0f},  // Sinistra-basso
+        
+        // Assiali (norma 1.0)
+        {1.0f, 0.0f},    // Destra
+        {-1.0f, 0.0f},   // Sinistra
+        {0.0f, 1.0f},    // Alto
+        {0.0f, -1.0f}    // Basso
     };
-
     /* Questi gradienti determinano la direzione e l'intensità della variazione 
     del rumore attorno a ciascun punto della griglia. */
 
+
+    // 5. NORMALIZZA I GRADIENTI SCOMMENTA PER AVERE UN RUMORE UNIFORME
+    normalizzaGradienti();  
+
 }
+
+    void PerlinNoise::normalizzaGradienti(){
+        for (auto& g : gradienti) {
+            float norma = std::sqrt(g.first * g.first + g.second * g.second);
+            if (norma > 0.0f) { //controllo divisione per 0
+                g.first /= norma;
+                g.second /= norma;
+            }
+        }
+    }
+
     float PerlinNoise::interpolare(float a, float b, float t) const {
-        return a + smussare(t) * (b - a);
+        float t_smussato = smussare(t);
+        return a + t_smussato * (b - a);
     }
     /* La funzione di interpolazione lineare (LERP) mescola i valori a e b
     in base al parametro t. La funzione smussare(t) viene utilizzata per
@@ -75,7 +98,9 @@ PerlinNoise::PerlinNoise(unsigned int seed) {
     */
 
     int PerlinNoise::indice(int x, int y) const {
-        return tabella_permutazione[(x + tabella_permutazione[y]) % 256];
+        int positiveY = y & 255;
+        int positiveX = x & 255;
+        return tabella_permutazione[(positiveX + tabella_permutazione[positiveY]) % 256];
     }
 
     /*Questa doppia permutazione serve a:
@@ -90,13 +115,27 @@ PerlinNoise::PerlinNoise(unsigned int seed) {
     // -------- FUNZIONE PRINCIPALE --------
 
     float PerlinNoise::noise(float x, float y) {
-        // 1. Trovo le coordinate cella unitaria (coordinate intere)
+        /* 1. Trovo le COORDINATE CELLA UNITARIA (coordinate intere)
+       Questa parte calcola le coordinate intere della cella in cui si trova il punto (x,y).
+        - std::floor(x) arrotonda verso il basso per ottenere l'angolo inferiore
+           sinistro della cella.
+        - & 255 (operazione bitwise AND con 255) limita il valore a 0-255,
+         creando un effetto di "wrapping" della griglia che rende il noise
+         ripetibile.
+        */ 
+
         int X = static_cast<int>(std::floor(x)) & 255;
         int Y = static_cast<int>(std::floor(y)) & 255;
 
-        // 2. Coordinate relative all'angolo della cella (0.0 a 1.0)
-        float x_rel = x - floor(x);
-        float y_rel = y - floor(y);
+        /* 2. COORDINATE RELATIVE all'angolo della cella (0.0 a 1.0)
+        Questa parte calcola le coordinate relative all'interno della cella, 
+         normalizzate tra 0.0 e 1.0.
+        - Sottraendo il valore intero, otteniamo la parte frazionaria 
+        della coordinata.
+        - Questi valori servono per interpolare tra i valori di gradiente
+        */
+        float x_rel = x - std::floor(x);
+        float y_rel = y - std::floor(y);
 
         // 3. Calcola gradienti ai 4 angoli
         float n0 = grad(indice(X, Y), x_rel, y_rel);
@@ -114,35 +153,63 @@ PerlinNoise::PerlinNoise(unsigned int seed) {
 
 
 // Funzione di test standalone
-/*
 
-cmake .. && make NoiseTest
-*/
 
 #if defined(TEST_NOISE_STANDALONE)
 
-
-
 void testNoise() {
-    std::cout << "\n=== TEST PERLIN NOISE ===\n";
+    std::cout << "\n====== TEST PERLIN NOISE ======\n";
 
-    // 1. Istanza con seed fisso per risultati riproducibili
-    PerlinNoise pn(12345);
+    PerlinNoise pn(12345);  // Seed fisso
 
-    // 2. Test punti notevoli
-    std::cout << "Valore a (0.0, 0.0): " << pn.noise(0.0f, 0.0f) << "\n";
-    std::cout << "Valore a (0.5, 0.5): " << pn.noise(0.5f, 0.5f) << "\n";  // Centro cella, dovrebbe essere ~0.0
-    std::cout << "Valore a (1.0, 1.0): " << pn.noise(1.0f, 1.0f) << "\n";  // Angolo cella
-
-    // 3. Test pattern 2D
-    std::cout << "\nPattern 5x5 (scale 0.2):\n";
-    for (int y = 0; y < 5; ++y) {
-        for (int x = 0; x < 5; ++x) {
-            float val = pn.noise(x * 0.2f, y * 0.2f);
-            std::cout << std::fixed << std::setprecision(2) << val << " ";
+    std::cout << std::fixed << std::setprecision(3);
+    
+    // Stampa i valori effettivi ottenuti
+    std::cout << "(0.0, 0.0): " << pn.noise(0.0f, 0.0f) << std::endl;
+    std::cout << "(0.5, 0.5): " << pn.noise(0.5f, 0.5f) << std::endl;
+    std::cout << "(1.0, 1.0): " << pn.noise(1.0f, 1.0f) << std::endl;
+    std::cout << "(2.3, 4.7): " << pn.noise(2.3f, 4.7f) << std::endl;
+    
+    // Test che verifica le proprietà del Perlin Noise invece di valori specifici
+    std::cout << "\n====== PROPERTIES TEST ======\n";
+    
+    // 1. Verifica che i valori siano nell'intervallo [-1,1]
+    float min_val = 1.0f, max_val = -1.0f;
+    for (float x = 0; x < 10; x += 0.5f) {
+        for (float y = 0; y < 10; y += 0.5f) {
+            float val = pn.noise(x, y);
+            min_val = std::min(min_val, val);
+            max_val = std::max(max_val, val);
         }
-        std::cout << "\n";
     }
+    std::cout << "Range: [" << min_val << ", " << max_val << "] (dovrebbe essere circa [-1, 1])" << std::endl;
+    
+    // 2. Verifica che il rumore sia coerente (punti vicini hanno valori simili)
+    float diff = std::abs(pn.noise(1.0f, 1.0f) - pn.noise(1.01f, 1.01f));
+    std::cout << "Coerenza: diff tra punti vicini = " << diff << " (dovrebbe essere piccola)" << std::endl;
+
+    // 3. Stampa una rappresentazione visiva della griglia di rumore
+     std::cout << "\n====== NOISE GRID VISUALIZATION ======\n";
+     const int gridSize = 40;
+     const float scale = 0.1f;  // Scala più piccola per vedere pattern più grandi
+     
+     for (int y = 0; y < gridSize; y++) {
+         for (int x = 0; x < gridSize; x++) {
+             float val = pn.noise(x * scale, y * scale);
+             
+             // Converti il valore in un carattere per visualizzazione
+             char c;
+             if (val < -0.75f)       c = ' ';  // Molto negativo (vuoto)
+             else if (val < -0.25f)  c = '.';  // Negativo
+             else if (val < 0.25f)   c = '-';  // Vicino a zero
+             else if (val < 0.75f)   c = '+';  // Positivo
+             else                    c = '#';  // Molto positivo
+             
+             std::cout << c;
+         }
+         std::cout << std::endl;
+     }
+
 }
 
 int main() {

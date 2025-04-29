@@ -18,9 +18,14 @@ private:
     std::vector<int> tabella_permutazione; //numeri unici da 0-255 mescolati casualmente
     std::vector<std::pair<float, float>> gradienti; //assegna una pendenza a ognu punto della griglia
     
+    void normalizzaGradienti(); //normalizza i gradienti per noise uniforme
+
     //LERP, unisce/mescola i valori di noise in base a t
-    float interpolare(float a, float b, float t) const; 
-    float smussare(float t) const;  //FADE Funzione di fading (6t⁵-15t⁴+10t³)
-    int indice(int x, int y) const;  // Per accedere alla tabella di permutazione
-    float grad(int hash, float x, float y) const; // calcola il gradiente
+    float interpolare(float a, float b, float t) const;
+    //FADE Funzione di fading (6t⁵-15t⁴+10t³) 
+    float smussare(float t) const; 
+    // Per accedere alla tabella di permutazione 
+    int indice(int x, int y) const;  
+    // calcola il gradiente
+    float grad(int hash, float x, float y) const; 
 };
