@@ -38,34 +38,37 @@ target_include_directories(TerrainGeneration PRIVATE
 # Specifica la directory dove trovare le librerie SFML
 target_link_directories(TerrainGeneration PRIVATE ${SFML_LIBRARY_DIR})
 
-# Collega le librerie SFML necessarie E LE LORO DIPENDENZE
+# Collega le librerie SFML principali
 target_link_libraries(TerrainGeneration PRIVATE
-    # Librerie SFML principali (CMake cerca in SFML_LIBRARY_DIR)
     sfml-graphics
     sfml-window
     sfml-system
+)
 
-    # Dipendenze specifiche per piattaforma
-    $<$<PLATFORM_ID:MacOS>: # Solo per macOS
+# Aggiungi dipendenze specifiche per piattaforma usando blocchi if()
+if(APPLE)
+    # Framework per macOS
+    # Usare le virgolette qui è comune quando si passano flag specifici
+    target_link_libraries(TerrainGeneration PRIVATE
         "-framework OpenGL"
         "-framework Carbon"
         "-framework AppKit"
         "-framework IOKit"
         "-framework Foundation"
-        # Aggiungi altri framework macOS se necessario (es. OpenAL, CoreAudio per sfml-audio)
-    >
-    $<$<PLATFORM_ID:Linux>: # Solo per Linux
-        # Librerie di sistema comuni per SFML su Linux
-        # Potrebbe essere necessario installarle su Debian (es. sudo apt install ...)
-        GL       # Libreria OpenGL
-        X11      # Libreria X11 base
-        Xrandr   # Per gestione schermi X11
-        freetype # Per gestione font
-        udev     # Per input device handling
-        # Aggiungi altre dipendenze Linux se necessario (es. openal per sfml-audio)
-    >
-    # Windows non richiede link espliciti a dipendenze di sistema qui di solito
-)
+        # Aggiungi altri framework macOS se necessario
+    )
+elseif(UNIX AND NOT APPLE) # Linux
+    # Librerie di sistema per Linux
+    target_link_libraries(TerrainGeneration PRIVATE
+        GL
+        X11
+        Xrandr
+        freetype
+        udev
+        # Aggiungi altre dipendenze Linux se necessario
+    )
+endif()
+# Nota: Windows non richiede link espliciti a dipendenze di sistema qui di solito
 
 # ------------------------------------------------------------------
 # Target per il Test di Noise.cpp (NoiseTest)
@@ -140,7 +143,7 @@ if(UNIX AND NOT APPLE) # Specifico per Linux
         add_custom_command(TARGET TerrainGeneration POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 "${SFML_LIBRARY_DIR}/${SFML_SO_FILE}" # Percorso completo del file sorgente
-                $<TARGET_FILE_DIR:TerrainGeneration>  # Directory di destinazione
+                "$<TARGET_FILE_DIR:TerrainGeneration>"  # Directory di destinazione (QUOTATA)
             COMMENT "Copying ${SFML_SO_FILE} to build directory"
         )
     endforeach()
@@ -150,4 +153,4 @@ if(UNIX AND NOT APPLE) # Specifico per Linux
         INSTALL_RPATH "$ORIGIN"
         BUILD_WITH_INSTALL_RPATH TRUE
     )
-endif()<
+endif()
