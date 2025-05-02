@@ -10,19 +10,28 @@ Crea la griglia dati, chiama Noise per popolare la griglia.
 #include <vector>
 #include <Noise.hpp> // per il noise
 
-enum class Biome {
-    Acqua, Sabbia, Erba, Montagna
+enum class Bioma {
+    Acqua, Sabbia, Erba, Collina , Montagna
 }; //aggiungere altri biomi se necessario
 
 class Terrain {
 public:
-    Terrain(const PerlinNoise& noise);
+    //costrttore per accettare dimensione tramite UI
+    Terrain(const PerlinNoise& noise, int width, int height, float scale = 0.1f);
     Bioma getBioma(float x, float y) const; //restituisce il bioma in base a x e y
     float getAltezza(float x, float y) const; //per visualizzazione 3D futura magari
+
+    int getWidth() const { return mapWidth; }
+    int getHeight() const { return mapHeight; }
 
 private:
     const PerlinNoise& generatore_noise;
     std::vector<std::vector<Bioma>> mappaBiomi;  //griglia di biomi
 
+    int mapWidth;
+    int mapHeight;
+    float noiseScale;
+
     void generaMappaBiomi(); //precalcola la mappa di biomi
-}
+};
+

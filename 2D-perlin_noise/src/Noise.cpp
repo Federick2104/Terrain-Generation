@@ -158,21 +158,14 @@ PerlinNoise::PerlinNoise(unsigned int seed) {
 #if defined(TEST_NOISE_STANDALONE)
 
 void testNoise() {
-    std::cout << "\n====== TEST PERLIN NOISE ======\n";
-
-    PerlinNoise pn(12345);  // Seed fisso
+    unsigned int seed = 12345;
+    PerlinNoise pn(seed);  // Seed fisso
 
     std::cout << std::fixed << std::setprecision(3);
     
-    // Stampa i valori effettivi ottenuti
-    std::cout << "(0.0, 0.0): " << pn.noise(0.0f, 0.0f) << std::endl;
-    std::cout << "(0.5, 0.5): " << pn.noise(0.5f, 0.5f) << std::endl;
-    std::cout << "(1.0, 1.0): " << pn.noise(1.0f, 1.0f) << std::endl;
-    std::cout << "(2.3, 4.7): " << pn.noise(2.3f, 4.7f) << std::endl;
-    
     // Test che verifica le proprietà del Perlin Noise invece di valori specifici
-    std::cout << "\n====== PROPERTIES TEST ======\n";
-    
+    std::cout << "\n====== PERLIN NOISE PROPERTIES TEST ======\n";
+    std::cout << "Seed => [ " << seed << " ] " << std::endl;
     // 1. Verifica che i valori siano nell'intervallo [-1,1]
     float min_val = 1.0f, max_val = -1.0f;
     for (float x = 0; x < 10; x += 0.5f) {
@@ -187,29 +180,7 @@ void testNoise() {
     // 2. Verifica che il rumore sia coerente (punti vicini hanno valori simili)
     float diff = std::abs(pn.noise(1.0f, 1.0f) - pn.noise(1.01f, 1.01f));
     std::cout << "Coerenza: diff tra punti vicini = " << diff << " (dovrebbe essere piccola)" << std::endl;
-
-    // 3. Stampa una rappresentazione visiva della griglia di rumore
-     std::cout << "\n====== NOISE GRID VISUALIZATION ======\n";
-     const int gridSize = 40;
-     const float scale = 0.1f;  // Scala più piccola per vedere pattern più grandi
-     
-     for (int y = 0; y < gridSize; y++) {
-         for (int x = 0; x < gridSize; x++) {
-             float val = pn.noise(x * scale, y * scale);
-             
-             // Converti il valore in un carattere per visualizzazione
-             char c;
-             if (val < -0.75f)       c = ' ';  // Molto negativo (vuoto)
-             else if (val < -0.25f)  c = '.';  // Negativo
-             else if (val < 0.25f)   c = '-';  // Vicino a zero
-             else if (val < 0.75f)   c = '+';  // Positivo
-             else                    c = '#';  // Molto positivo
-             
-             std::cout << c;
-         }
-         std::cout << std::endl;
-     }
-
+    
 }
 
 int main() {
