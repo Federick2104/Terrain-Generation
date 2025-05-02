@@ -1,3 +1,62 @@
+# Come compilare ed eseguire il progetto
+
+Questo progetto utilizza CMake per la compilazione. Assicurati di avere CMake e un compilatore C++ (come g++ o Clang) installati. Se sei su Linux (come Debian/Ubuntu), installa anche le dipendenze di SFML:
+
+```bash
+# Esempio per Debian/Ubuntu
+sudo apt update
+sudo apt install build-essential cmake libgl-dev libx11-dev libxrandr-dev libfreetype6-dev libudev-dev
+```
+
+## 1. Creare la directory di build
+
+Dalla directory principale del progetto (`2D-perlin_noise`), esegui:
+
+```bash
+mkdir build
+cd build
+```
+
+## 2. Configurare con CMake
+
+Una volta dentro la directory `build`, esegui CMake per generare i file di build:
+
+```bash
+cmake ..
+```
+
+## 3. Compilare il progetto
+
+Sempre dalla directory `build`, compila entrambi gli eseguibili (`TerrainGeneration` e `NoiseTest`):
+
+```bash
+make
+```
+*In alternativa, puoi compilare solo il target principale:*
+```bash
+make TerrainGeneration
+```
+*O solo il target di test:*
+```bash
+make NoiseTest
+```
+
+## 4. Eseguire il programma principale
+
+Dopo la compilazione, puoi eseguire il visualizzatore del terreno dalla directory `build`:
+
+```bash
+./TerrainGeneration
+```
+
+## 5. Eseguire il test del noise (opzionale)
+
+Se hai compilato `NoiseTest`, puoi eseguirlo dalla directory `build`:
+
+```bash
+./NoiseTest
+```
+
 # 2D Perlin Noise TerrainGenerator
 ### Main algorithm noise()
 Questo codice implementa la funzione `noise()` dell’algoritmo **Perlin Noise** in 2D. Di seguito viene descritto in dettaglio ogni sua sezione.
@@ -74,29 +133,6 @@ L'algoritmo genera un valore di rumore che:
 4. È __efficiente__ da calcolare (utilizza solo operazioni semplici).
 
 Questo è il cuore dell'algoritmo Perlin Noise, che crea un "rumore coerente" utilizzato in innumerevoli applicazioni di computer grafica, generazione procedurale di terreni, texture, animazioni e molto altro
-
-# Come compilare il progetto
-
-### CMake build script for the project
-creare cartella build
-```shell
-mkdir build
-cd build
-```
-
-### CMake build script for the project
-```shell
-cmake .. && make 
-```
-### Run the TestNoise program
-```shell
-cmake .. && make TestNoise &&  ./TestNoise 
-```
-
-### Run the program
-```shell
-./Terraingenerator
-``` 
 
 
 ## Curiosità sul Perlin Noise

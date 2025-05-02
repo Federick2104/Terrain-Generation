@@ -1,70 +1,139 @@
 cmake_minimum_required(VERSION 3.22)
 project(TerrainGeneration)
 
-
-# Trova SFML
-find_package(SFML 3.0 REQUIRED COMPONENTS Graphics Window System)
-
 # Imposta lo standard C++
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# --- Configurazione per SFML locale ---
+# Definisci il percorso radice della tua copia locale di SFML
+# CMAKE_CURRENT_SOURCE_DIR è la directory di questo CMakeLists.txt
+set(SFML_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/SFML-3.0")
+
+# Verifica se le directory SFML esistono (opzionale ma utile)
+if(NOT EXISTS "${SFML_ROOT}/include/SFML/Graphics.hpp")
+    message(FATAL_ERROR "SFML include directory not found at ${SFML_ROOT}/include. Please check the SFML_ROOT path. Expected relative path: SFML-3.0")
+endif()
+if(NOT EXISTS "${SFML_ROOT}/lib")
+    message(FATAL_ERROR "SFML library directory not found at ${SFML_ROOT}/lib. Please check the SFML_ROOT path. Expected relative path: SFML-3.0")
+endif()
+
+# Definisci le directory di include e librerie di SFML
+set(SFML_INCLUDE_DIR "${SFML_ROOT}/include")
+set(SFML_LIBRARY_DIR "${SFML_ROOT}/lib")
+# --- Fine Configurazione SFML locale ---
+
 # Aggiungi i sorgenti
 file(GLOB SOURCES "src/*.cpp")
 
-# Crea l'eseguibile PRIMA di modificare le sue proprietà
+# Crea l'eseguibile principale
 add_executable(TerrainGeneration ${SOURCES})
 
-# ------------------------------------------------------------------
-# TEST NOISE Noise.cpp
+# Aggiungi le directory di include necessarie al target
+target_include_directories(TerrainGeneration PRIVATE
+    ${SFML_INCLUDE_DIR}             # Include di SFML (da SFML_ROOT)
+    ${CMAKE_CURRENT_SOURCE_DIR}/include # Include del tuo progetto (es. Terrain.hpp)
+)
 
-# Aggiungi questa sezione dopo il target principale
-add_executable(NoiseTest 
+# Specifica la directory dove trovare le librerie SFML
+target_link_directories(TerrainGeneration PRIVATE ${SFML_LIBRARY_DIR})
+
+# Collega le librerie SFML necessarie E LE LORO DIPENDENZE
+target_link_libraries(TerrainGeneration PRIVATE
+    # Librerie SFML principali (CMake cerca in SFML_LIBRARY_DIR)
+    sfml-graphics
+    sfml-window
+    sfml-system
+
+    # Dipendenze specifiche per piattaforma
+    $<$<PLATFORM_ID:MacOS>: # Solo per macOS
+        "-framework OpenGL"
+        "-framework Carbon"
+        "-framework AppKit"
+        "-framework IOKit"
+        "-framework Foundation"
+        # Aggiungi altri framework macOS se necessario (es. OpenAL, CoreAudio per sfml-audio)
+    >
+    $<$<PLATFORM_ID:Linux>: # Solo per Linux
+        # Librerie di sistema comuni per SFML su Linux
+        # Potrebbe essere necessario installarle su Debian (es. sudo apt install ...)
+        GL       # Libreria OpenGL
+        X11      # Libreria X11 base
+        Xrandr   # Per gestione schermi X11
+        freetype # Per gestione font
+        udev     # Per input device handling
+        # Aggiungi altre dipendenze Linux se necessario (es. openal per sfml-audio)
+    >
+    # Windows non richiede link espliciti a dipendenze di sistema qui di solito
+)
+
+# ------------------------------------------------------------------
+# Target per il Test di Noise.cpp (NoiseTest)
+# ------------------------------------------------------------------
+add_executable(NoiseTest
     src/Noise.cpp
 )
 
-target_include_directories(NoiseTest PRIVATE 
-    ${CMAKE_SOURCE_DIR}/include
+# Aggiungi la directory include del tuo progetto a NoiseTest
+target_include_directories(NoiseTest PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-# Aggiungi definizione per abilitare il main di test
-target_compile_definitions(NoiseTest PRIVATE 
+# Aggiungi definizione per abilitare il main di test in Noise.cpp
+target_compile_definitions(NoiseTest PRIVATE
     TEST_NOISE_STANDALONE
 )
+# Nota: NoiseTest non linka SFML.
 
 # ------------------------------------------------------------------
+# Comandi Post-Build (Copia librerie SFML accanto all'eseguibile)
+# ------------------------------------------------------------------
 
-# Aggiungi include e librerie DOPO la creazione del target
-target_include_directories(TerrainGeneration PRIVATE ${SFML_INCLUDE_DIRS})
-target_link_libraries(TerrainGeneration PRIVATE
-    SFML::Graphics
-    SFML::Window
-    SFML::System
-)
-
-target_include_directories(TerrainGeneration PRIVATE 
-    ${SFML_INCLUDE_DIR}
-    ${CMAKE_SOURCE_DIR}/SFML-3.0/include  # Percorso assoluto alternativo
-    ${CMAKE_SOURCE_DIR}/include)
-# Imposta il percorso di SFML 3.0 (modifica con il tuo percorso effettivo)
-set(SFML_ROOT "${CMAKE_SOURCE_DIR}/SFML-3.0")
-
-# Configurazione per Windows (copia DLL)
 if(WIN32)
+    # Su Windows, copia le DLL necessarie
     add_custom_command(TARGET TerrainGeneration POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${SFML_ROOT}/bin/sfml-graphics-3.dll"
+            "${SFML_ROOT}/bin/sfml-graphics-3.dll"  # Verifica nomi file
             "${SFML_ROOT}/bin/sfml-window-3.dll"
             "${SFML_ROOT}/bin/sfml-system-3.dll"
+            # Aggiungi altre DLL SFML/dipendenze se necessario
             $<TARGET_FILE_DIR:TerrainGeneration>
+        COMMENT "Copying SFML DLLs to build directory"
     )
 endif()
 
-
 if(APPLE)
+    # Su macOS, copia le librerie dinamiche (.dylib)
     add_custom_command(TARGET TerrainGeneration POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${SFML_ROOT}/lib/"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different # Copia solo se cambiano
+            "${SFML_LIBRARY_DIR}/libsfml-graphics.dylib" # Verifica nomi file
+            "${SFML_LIBRARY_DIR}/libsfml-window.dylib"
+            "${SFML_LIBRARY_DIR}/libsfml-system.dylib"
+            # Aggiungi altre .dylib SFML/dipendenze se necessario
             $<TARGET_FILE_DIR:TerrainGeneration>
+        COMMENT "Copying SFML dylibs to build directory"
+    )
+    # Imposta RPATH per trovare le dylib copiate
+    set_target_properties(TerrainGeneration PROPERTIES
+        MACOSX_RPATH TRUE
+    )
+    target_link_options(TerrainGeneration PRIVATE "-Wl,-rpath,@executable_path")
+endif()
+
+if(UNIX AND NOT APPLE) # Specifico per Linux
+    # Copia le librerie .so di SFML
+    add_custom_command(TARGET TerrainGeneration POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different # Copia solo se cambiano
+            "${SFML_LIBRARY_DIR}/libsfml-graphics.so" # Verifica nomi file esatti
+            "${SFML_LIBRARY_DIR}/libsfml-window.so"
+            "${SFML_LIBRARY_DIR}/libsfml-system.so"
+            # Aggiungi altre .so SFML/dipendenze se necessario
+            $<TARGET_FILE_DIR:TerrainGeneration>
+        COMMENT "Copying SFML .so libraries to build directory"
+    )
+    # Imposta RPATH per trovare le .so nella stessa cartella dell'eseguibile
+    set_target_properties(TerrainGeneration PROPERTIES
+        INSTALL_RPATH "$ORIGIN"
+        BUILD_WITH_INSTALL_RPATH TRUE
     )
 endif()
