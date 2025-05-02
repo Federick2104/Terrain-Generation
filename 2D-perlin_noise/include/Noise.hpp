@@ -9,10 +9,10 @@ Contiene funzioni che generano valori di noise di coordinata (x,y).
 class PerlinNoise {
 //Costruttore: accetta un "seed" per inizializzare la tabella di permutazione
 public: 
-    PerlinNoise(unsigned int seed);
+    PerlinNoise(unsigned long seed);
 
 // Metodo principale: restituisce un valore tra -1.0 e 1.0 per le coordinate (x,y)
-    float noise(float x, float y);
+    float noise(float x, float y) const;
 
 private:
     std::vector<int> tabella_permutazione; //numeri unici da 0-255 mescolati casualmente

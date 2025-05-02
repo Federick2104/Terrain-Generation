@@ -8,7 +8,7 @@
 #include <random>     // Per std::default_random_engine
 #include <cmath>     // Per std::floor std::sqrt
 
-PerlinNoise::PerlinNoise(unsigned int seed) {
+PerlinNoise::PerlinNoise(unsigned long seed) {
     // 1. Inizializzo la tabella_permutazione con numeri da 0 a 255
     tabella_permutazione.resize(256);
     std::iota(tabella_permutazione.begin(), tabella_permutazione.end(), 0);
@@ -114,7 +114,7 @@ PerlinNoise::PerlinNoise(unsigned int seed) {
     // (x, y) → permutazione → gradiente → rumore
     // -------- FUNZIONE PRINCIPALE --------
 
-    float PerlinNoise::noise(float x, float y) {
+    float PerlinNoise::noise(float x, float y) const {
         /* 1. Trovo le COORDINATE CELLA UNITARIA (coordinate intere)
        Questa parte calcola le coordinate intere della cella in cui si trova il punto (x,y).
         - std::floor(x) arrotonda verso il basso per ottenere l'angolo inferiore
@@ -158,29 +158,60 @@ PerlinNoise::PerlinNoise(unsigned int seed) {
 #if defined(TEST_NOISE_STANDALONE)
 
 void testNoise() {
-    unsigned int seed = 12345;
-    PerlinNoise pn(seed);  // Seed fisso
+    // Define biome enum
+    enum class Bioma {
+        Acqua,
+        Sabbia,
+        Erba,
+        Collina,
+        Montagna
+    };
 
-    std::cout << std::fixed << std::setprecision(3);
+    unsigned int seed = 12345678; // Seed test
+    PerlinNoise pn(seed);
     
-    // Test che verifica le proprietà del Perlin Noise invece di valori specifici
-    std::cout << "\n====== PERLIN NOISE PROPERTIES TEST ======\n";
-    std::cout << "Seed => [ " << seed << " ] " << std::endl;
-    // 1. Verifica che i valori siano nell'intervallo [-1,1]
-    float min_val = 1.0f, max_val = -1.0f;
-    for (float x = 0; x < 10; x += 0.5f) {
-        for (float y = 0; y < 10; y += 0.5f) {
-            float val = pn.noise(x, y);
-            min_val = std::min(min_val, val);
-            max_val = std::max(max_val, val);
+    // Create biome map array
+    Bioma mappaBiomi[256][256];
+
+    float noiseScale = 0.05f;
+
+
+    // Generate biome map based on noise
+    for (int y = 0; y < 256; ++y) {
+        for (int x = 0; x < 256; ++x) {
+            float noiseValue = pn.noise(x * noiseScale, y * noiseScale);
+            
+            // Converti il valore di noise in bioma
+            if (noiseValue < -0.4f) {
+                mappaBiomi[y][x] = Bioma::Acqua;
+            } else if (noiseValue < -0.2f) {
+                mappaBiomi[y][x] = Bioma::Sabbia;
+            } else if (noiseValue < 0.4f) {
+                mappaBiomi[y][x] = Bioma::Erba;
+            } else if (noiseValue < 0.6f) {
+                mappaBiomi[y][x] = Bioma::Collina;
+            } else {
+                mappaBiomi[y][x] = Bioma::Montagna;
+            }
         }
     }
-    std::cout << "Range: [" << min_val << ", " << max_val << "] (dovrebbe essere circa [-1, 1])" << std::endl;
     
-    // 2. Verifica che il rumore sia coerente (punti vicini hanno valori simili)
-    float diff = std::abs(pn.noise(1.0f, 1.0f) - pn.noise(1.01f, 1.01f));
-    std::cout << "Coerenza: diff tra punti vicini = " << diff << " (dovrebbe essere piccola)" << std::endl;
-    
+    // Print the biome map
+    std::cout << " ================== Noise biome visualization ==================" << std::endl;
+    for (int y = 0; y < 256; ++y) {
+        for (int x = 0; x < 256; ++x) {
+            char biomeSymbol;
+            switch (mappaBiomi[y][x]) {
+                case Bioma::Acqua:     biomeSymbol = '~'; break;
+                case Bioma::Sabbia:    biomeSymbol = '.'; break;
+                case Bioma::Erba:      biomeSymbol = '_'; break;
+                case Bioma::Collina:   biomeSymbol = '^'; break;
+                case Bioma::Montagna:  biomeSymbol = 'A'; break;
+            }
+            std::cout << biomeSymbol << " ";
+        }
+        std::cout << std::endl;
+    }
 }
 
 int main() {

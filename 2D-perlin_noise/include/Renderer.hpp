@@ -8,6 +8,11 @@ Creare finestre, disegnare immagini, modificare i pixel,
 */
 #pragma once
 #include <SFML/Graphics.hpp>
+#include <SFML/Window.hpp>
+#include <SFML/System.hpp>
+#include <SFML/Window/Event.hpp>
+#include <cstdlib>
+
 #include "Noise.hpp"  // Per il noise grezzo (opzionale)
 #include "Terrain.hpp" // Per i biomi
 //MODALITA' DI VISUALIZZAZIONE
@@ -19,11 +24,10 @@ enum class ModalitaVisualizzazione{
 
 class Renderer {
 public:
-    Renderer(const Terrain& terreno, unsigned int cellSize = 4); 
+    Renderer(const Terrain& terreno, unsigned int cellSize); 
     void run(); //avvia il loop main
 
     void setModalita(ModalitaVisualizzazione modalita);
-    void salvaImmagine(const std::string& nome_file); 
 
 private:
     const Terrain& terreno; 
@@ -31,22 +35,18 @@ private:
     sf::View camera;
 
     unsigned int cellSize; //dim cella pixel
-    ModalitaVisualizzazione modAttuale = ModalitaVisualizzazione::BIOMI; 
+    ModalitaVisualizzazione modAttuale = ModalitaVisualizzazione::COMBINATA; // Default mode
 
-    sf::Vector2i mousePos;
-    bool pannelloAttivo = false; 
-
-    //UI elems
-    sf::Font font;
-    sf::Text infoText;
+    sf::Vector2i mousePos; 
+    bool isPanning = false; // For panning
+    sf::Vector2i lastMousePos; // For panning
 
     void gestioneEventi();
     void drawTerreno();
     sf::Color determinaColore(float valore_noise) const;  //colore cella
     sf::Color determinaColoreBioma(Bioma bioma) const; //colore bioma
     void zoomView(float factor, sf::Vector2i mousePos);
-    void panView(sf::Vector2i delta);
-    void updateInfoText(sf::Vector2i mousePos);
+    void panView(sf::Vector2i currentMousePos); // Declare panView
     void drawUI();
 
 };
