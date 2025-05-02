@@ -121,19 +121,33 @@ if(APPLE)
 endif()
 
 if(UNIX AND NOT APPLE) # Specifico per Linux
-    # Copia le librerie .so di SFML
-    add_custom_command(TARGET TerrainGeneration POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different # Copia solo se cambiano
-            "${SFML_LIBRARY_DIR}/libsfml-graphics.so" # Verifica nomi file esatti
-            "${SFML_LIBRARY_DIR}/libsfml-window.so"
-            "${SFML_LIBRARY_DIR}/libsfml-system.so"
-            # Aggiungi altre .so SFML/dipendenze se necessario
-            $<TARGET_FILE_DIR:TerrainGeneration>
-        COMMENT "Copying SFML .so libraries to build directory"
+    # Trova tutti i file .so rilevanti di SFML nella directory lib
+    # Questo include i file base (es. libsfml-graphics.so) e quelli versionati (es. libsfml-graphics.so.3.0)
+    file(GLOB SFML_SO_FILES
+        LIST_DIRECTORIES false # Non includere directory nei risultati
+        RELATIVE "${SFML_LIBRARY_DIR}" # Rendi i percorsi relativi a SFML_LIBRARY_DIR
+        "${SFML_LIBRARY_DIR}/libsfml-graphics.so*"
+        "${SFML_LIBRARY_DIR}/libsfml-window.so*"
+        "${SFML_LIBRARY_DIR}/libsfml-system.so*"
+        # Aggiungi qui altri moduli SFML se li usi (es. audio, network)
+        # "${SFML_LIBRARY_DIR}/libsfml-audio.so*"
+        # "${SFML_LIBRARY_DIR}/libsfml-network.so*"
     )
+
+    # Copia tutti i file .so trovati nella directory dell'eseguibile
+    # Usiamo un ciclo perché copy_if_different potrebbe avere problemi con liste lunghe o caratteri speciali
+    foreach(SFML_SO_FILE ${SFML_SO_FILES})
+        add_custom_command(TARGET TerrainGeneration POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${SFML_LIBRARY_DIR}/${SFML_SO_FILE}" # Percorso completo del file sorgente
+                $<TARGET_FILE_DIR:TerrainGeneration>  # Directory di destinazione
+            COMMENT "Copying ${SFML_SO_FILE} to build directory"
+        )
+    endforeach()
+
     # Imposta RPATH per trovare le .so nella stessa cartella dell'eseguibile
     set_target_properties(TerrainGeneration PROPERTIES
         INSTALL_RPATH "$ORIGIN"
         BUILD_WITH_INSTALL_RPATH TRUE
     )
-endif()
+endif()<
