@@ -23,13 +23,13 @@ void Terrain::generaMappaBiomi(){
             float noiseValue = generatore_noise.noise(nx, ny);
             
             // Converti il valore di noise in bioma
-            if (noiseValue < -0.4f) {
+            if (noiseValue < -0.0f) {
                 mappaBiomi[y][x] = Bioma::Acqua;
-            } else if (noiseValue < -0.2f) {
+            } else if (noiseValue < 0.1f) {
                 mappaBiomi[y][x] = Bioma::Sabbia;
-            } else if (noiseValue < 0.4f) {
+            } else if (noiseValue < 0.3f) {
                 mappaBiomi[y][x] = Bioma::Erba;
-            } else if (noiseValue < 0.6f) {
+            } else if (noiseValue < 0.55f) {
                 mappaBiomi[y][x] = Bioma::Collina;
             } else {
                 mappaBiomi[y][x] = Bioma::Montagna;

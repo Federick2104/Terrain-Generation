@@ -116,7 +116,6 @@ void Renderer::gestioneEventi()
         }
 
         // 6) Pan View on Mouse Move (if panning)
-        // TO_DO: Panning logic is here but reported as not working. Needs further investigation.
         if (auto const* mm = eventOpt->getIf<sf::Event::MouseMoved>())
         {
             if (isPanning)
@@ -128,21 +127,12 @@ void Renderer::gestioneEventi()
     }
 }
 
-//// Drawing
+//// Drawing 
 
 void Renderer::panView(sf::Vector2i currentMousePos) {
     sf::Vector2f lastPosF = finestra.mapPixelToCoords(lastMousePos);
     sf::Vector2f currentPosF = finestra.mapPixelToCoords(currentMousePos);
     sf::Vector2f delta = lastPosF - currentPosF; // Calculate the difference in world coordinates
-
-    // Add this debug output
-    // if (delta.x != 0 || delta.y != 0) { // DEBUG removed
-    //     std::cout << "DEBUG: panView called. Delta World Coords: (" << delta.x << ", " << delta.y << ")" << std::endl; // DEBUG removed
-    // } else { // DEBUG removed
-         // Optional: Log if delta is zero to see if that's the issue // DEBUG removed
-         // std::cout << "DEBUG: panView called but delta is zero." << std::endl; // DEBUG removed
-    // } // DEBUG removed
-
 
     camera.move(delta); // Move the camera by the delta
     finestra.setView(camera); // Apply the updated view
